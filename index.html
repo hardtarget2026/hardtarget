@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>HardTarget -- Windows Physical Security Scanner</title>
+<meta name="description" content="Single-file PowerShell scanner for Windows physical security posture. 77 checks, 8 domains, 4 seconds. No dependencies.">
+<style>
+/* SECURITY (v0.82): No external font imports. A physical security scanner should
+   not make outbound HTTP requests to third-party CDNs. System fonts only. */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0c0c;
+  --surface: #151515;
+  --border: #262626;
+  --text: #c8c8c8;
+  --text-dim: #737373;
+  --accent: #e05a33;
+  --pass: #3a9a5b;
+  --fail: #c44;
+  --warn: #b89430;
+  --mono: 'Cascadia Code', 'Cascadia Mono', Consolas, 'SF Mono', 'Fira Code', monospace;
+  --serif: Charter, 'Bitstream Charter', Cambria, Georgia, serif;
+}
+
+html { font-size: 16px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+}
+
+header { margin-bottom: 3.5rem; }
+
+h1 {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+h1 span { color: var(--text-dim); font-weight: 400; }
+
+.tagline {
+  font-size: 1rem;
+  color: var(--text-dim);
+  max-width: 500px;
+}
+
+section { margin-bottom: 3rem; }
+
+h2 {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+p { margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+}
+
+.stat {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+.stat-num {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  line-height: 1.2;
+}
+
+.stat-label {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.status-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.pill {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.pill-pass { color: var(--pass); border-color: var(--pass); }
+.pill-fail { color: var(--fail); border-color: var(--fail); }
+.pill-warn { color: var(--warn); border-color: var(--warn); }
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.2rem 1.4rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  color: var(--accent);
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.btn {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.65rem 1.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  transition: opacity 0.15s;
+}
+
+.btn:hover { text-decoration: none; opacity: 0.85; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.domains {
+  columns: 2;
+  column-gap: 2rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 2;
+}
+
+.notice {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  padding: 1rem 1.2rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  margin-top: 2rem;
+}
+
+.notice strong { color: var(--text); }
+
+footer {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+@media (max-width: 520px) {
+  .stats { gap: 1.2rem; }
+  .domains { columns: 1; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <h1>HardTarget <span>v0.83</span></h1>
+  <p class="tagline">Windows physical security scanner. Single PowerShell file. No dependencies.</p>
+</header>
+
+<section>
+  <div class="stats">
+    <div class="stat"><span class="stat-num">77</span><span class="stat-label">checks</span></div>
+    <div class="stat"><span class="stat-num">8</span><span class="stat-label">domains</span></div>
+    <div class="stat"><span class="stat-num">~4s</span><span class="stat-label">scan time</span></div>
+    <div class="stat"><span class="stat-num">1</span><span class="stat-label">file</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>The problem</h2>
+  <p>Nothing in Windows, SCCM, Intune, or any major MDM checks the actual physical security posture of a running machine. They check policy. Policy says one thing; the machine does another. Windows Update silently reverts your hardening. Nobody notices.</p>
+  <p>The Dolos Group pulled BitLocker keys from a locked corporate laptop with a $200 logic analyser. The laptop passed every compliance check in the org's tooling.</p>
+</section>
+
+<section>
+  <h2>What it checks</h2>
+  <div class="domains">
+    BIOS / Firmware<br>
+    Sleep States<br>
+    TPM<br>
+    DMA / Virtualization<br>
+    Encryption<br>
+    Memory Residue<br>
+    Access Control<br>
+    Data Exposure Surface
+  </div>
+  <div class="status-row" style="margin-top: 1rem;">
+    <span class="pill pill-pass">PASS</span>
+    <span class="pill pill-warn">WARN</span>
+    <span class="pill pill-fail">FAIL</span>
+  </div>
+  <p>Every check maps to real attack scenarios: cold boot, DMA, evil maid, sleep/wake, forensic recovery, device compromise. The dashboard groups findings by threat so you see your actual exposure, not a flat list.</p>
+</section>
+
+<section>
+  <h2>Modes</h2>
+  <p><strong>Audit</strong> - read-only dashboard. Changes nothing.</p>
+  <p><strong>Expert</strong> - dashboard + fix engine. Beta. Every fix needs a confirmation code typed at the PowerShell console.</p>
+  <p><strong>Report</strong> - JSON file only. No server, no dashboard.</p>
+</section>
+
+<section>
+  <h2>Run it</h2>
+<pre>
+<span style="color:#737373"># Double-click the BAT, or:</span>
+powershell -NoProfile -ExecutionPolicy Bypass -File .\HardTarget.ps1
+
+<span style="color:#737373"># Read-only dashboard:</span>
+.\HardTarget.ps1 -ReadOnly
+
+<span style="color:#737373"># JSON report only:</span>
+.\HardTarget.ps1 -Audit
+</pre>
+  <p>Windows 10/11. PowerShell 5.1 (built in). Admin. Nothing else.</p>
+  <div class="actions">
+    <a href="https://github.com/hardtarget2026/hardtarget/releases/latest" class="btn btn-primary">Download v0.83</a>
+    <a href="https://github.com/hardtarget2026/hardtarget" class="btn btn-secondary">Source on GitHub</a>
+  </div>
+</section>
+
+<section>
+  <h2>First run</h2>
+  <p>Windows will try to stop you. Right-click the downloaded <code>.ps1</code> file > Properties > check <strong>Unblock</strong> > OK. SmartScreen may warn on the BAT - click <strong>More info</strong> > <strong>Run anyway</strong>. If Defender quarantines the file, check Protection History and restore it.</p>
+</section>
+
+<section>
+  <h2>Verify</h2>
+<pre>
+<span style="color:#737373"># SHA256</span>
+Get-FileHash .\HardTarget.ps1 -Algorithm SHA256
+
+<span style="color:#737373"># Expected:</span>
+7dacc4edefdefad6cc8914f103dae81dee65e5762440eacb30f16844ea9c88c9
+</pre>
+</section>
+
+<div class="notice">
+  <strong>For security professionals only.</strong> This is beta software. It writes to the registry and can affect boot, sleep, and recovery. Read the source code before you run it. Not designed for consumers. See <a href="https://github.com/hardtarget2026/hardtarget/blob/main/HardTarget.ps1">the script header</a> for full legal terms.
+</div>
+
+<footer>
+  Copyright (c) 2026 HardTarget Contributors. BSL 1.1 - converts to MIT on 1 Feb 2030.
+</footer>
+
+</div>
+</body>
+</html>
