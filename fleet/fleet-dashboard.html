@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HardTarget Fleet Dashboard</title>
+<!-- H-1 FIX (v0.45): Removed broken SRI placeholder that blocked MSAL load.
+     DEPLOYMENT REQUIREMENT: Compute the real SRI hash and add it back:
+       curl -sL https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js | openssl dgst -sha384 -binary | openssl base64 -A
+     Then add: integrity="sha384-HASH_OUTPUT_HERE" crossorigin="anonymous"
+     to the script tag below. CI should verify this on each build. -->
+<script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"
+        crossorigin="anonymous"></script>
+<style>
+:root{--bg:#080c18;--card:#0d1424;--card-hover:#0f1830;--border:rgba(255,255,255,0.06);--border-light:rgba(255,255,255,0.1);--text:#e2e8f0;--dim:#64748b;--dimmer:#475569;--pass:#22c55e;--cond-pass:#2dd4bf;--warn:#f59e0b;--fail:#ef4444;--accent:#38bdf8}
+*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}.ctr{max-width:960px;margin:0 auto;padding:30px 20px}
+.header{margin-bottom:28px}.header h1{font-size:26px;font-weight:300;letter-spacing:5px;text-transform:uppercase}.header h1 b{color:var(--accent);font-weight:300}.header-meta{font-size:11px;color:var(--dim);margin-top:4px}
+.setup{max-width:520px;margin:0 auto;padding:40px 0}.setup h2{font-size:16px;font-weight:500;margin-bottom:20px;color:var(--dim)}
+.setup-option{padding:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;cursor:pointer;transition:all .15s}.setup-option:hover{border-color:var(--border-light)}.setup-option.active{border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.04)}.setup-option h3{font-size:13px;font-weight:600;margin-bottom:4px}.setup-option p{font-size:11px;color:var(--dim)}
+.field{margin:16px 0}.field label{display:block;font-size:11px;color:var(--dim);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}.field input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:monospace}.field input:focus{outline:none;border-color:var(--accent)}.field .hint{font-size:10px;color:var(--dimmer);margin-top:4px}
+.btn{padding:10px 24px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}.btn-primary{background:rgba(56,189,248,0.15);color:var(--accent);border:1px solid rgba(56,189,248,0.3)}.btn-primary:hover{background:rgba(56,189,248,0.25)}.btn-row{display:flex;gap:8px;margin-top:20px}
+.status-msg{font-size:11px;margin-top:12px;padding:8px 12px;border-radius:6px}.status-msg.error{background:rgba(239,68,68,0.1);color:var(--fail)}.status-msg.loading{background:rgba(56,189,248,0.08);color:var(--accent)}.status-msg.ok{background:rgba(34,197,94,0.08);color:var(--pass)}
+.drop-zone{border:2px dashed var(--border-light);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-top:12px}.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent)}.drop-zone p{font-size:11px;color:var(--dim);margin-top:4px}.file-input{display:none}
+.nav{display:flex;gap:2px;flex-wrap:wrap}.nav button{padding:7px 16px;border:none;border-radius:6px;font-size:11px;font-weight:600;letter-spacing:.5px;cursor:pointer;background:transparent;color:var(--dim)}.nav button.active{background:rgba(56,189,248,0.12);color:var(--accent)}.nav button:hover:not(.active){color:var(--text)}
+.scards{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}.scard{flex:1;min-width:80px;padding:18px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;text-align:center}.scard .v{font-size:26px;font-weight:700}.scard .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:4px}
+.pbar{display:flex;border-radius:6px;overflow:hidden;height:8px;margin-bottom:6px}.pleg{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-bottom:24px}
+.b{display:inline-block;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}.b-s{padding:2px 6px;font-size:9px}.b-fail{background:rgba(239,68,68,0.12);color:var(--fail);border:1px solid rgba(239,68,68,0.25)}.b-warn{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.25)}.b-pass{background:rgba(34,197,94,0.12);color:var(--pass);border:1px solid rgba(34,197,94,0.25)}
+.mitem{padding:16px 18px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:8px;border-left:3px solid var(--border)}.mitem:hover{background:var(--card-hover)}.mitem.fail{border-left-color:var(--fail)}.mitem.warn{border-left-color:var(--warn)}.mitem.pass{border-left-color:var(--pass)}
+.mhead{display:flex;align-items:center;gap:12px;margin-bottom:8px}.mhead .nm{font-size:14px;font-weight:600;flex:1}
+.mmeta{display:flex;gap:16px;font-size:11px;color:var(--dim)}
+.frow{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.fcnt{min-width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.fbar{display:flex;gap:3px;margin:8px 0}.fbar div{flex:1;height:4px;border-radius:2px}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;margin:2px}.tag-fail{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:var(--fail)}.tag-warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:var(--warn)}.tags{display:flex;gap:6px;flex-wrap:wrap}
+.dcard{padding:20px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:16px}
+.crow{display:flex;align-items:center;gap:10px;padding:7px 14px;background:var(--card);border:1px solid var(--border);border-radius:6px;margin-bottom:4px}
+.cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sorts{display:flex;gap:8px;margin-bottom:16px;align-items:center}.sorts .l{font-size:10px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.sbtn{padding:4px 10px;border:1px solid var(--border);border-radius:4px;font-size:10px;cursor:pointer;background:transparent;color:var(--dim)}.sbtn.active{border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.08);color:var(--accent)}
+.backbtn{padding:5px 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-size:11px;cursor:pointer;margin-bottom:16px}.backbtn:hover{color:var(--text)}
+.sh{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.5px;margin-bottom:12px}
+.ebar{display:flex;gap:8px;margin-bottom:20px}.ebtn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--dim);font-size:11px;cursor:pointer;font-weight:600}.ebtn:hover{color:var(--accent);border-color:var(--accent)}
+.refresh-btn{padding:4px 12px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--dim);font-size:10px;cursor:pointer;margin-left:4px}.refresh-btn:hover{color:var(--accent);border-color:var(--accent)}
+.footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--dimmer)}.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="ctr">
+  <div class="header">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:4px"><h1>Hard<b>Target</b></h1><span style="font-size:11px;color:var(--dim);letter-spacing:1px">FLEET DASHBOARD</span></div>
+    <div class="header-meta" id="headerMeta"></div>
+  </div>
+  <div id="setupScreen" class="setup">
+    <h2>Connect to fleet data</h2>
+    <div class="setup-option active" id="opt-graph" onclick="pickSource('graph')">
+      <h3>Microsoft Intune (Graph API)</h3>
+      <p>Sign in with Entra ID. Reads compliance results directly from Intune -- no extra infrastructure.</p>
+    </div>
+    <div id="cfg-graph">
+      <div class="field">
+        <label>Entra App (Client) ID</label>
+        <input type="text" id="clientId" placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+        <div class="hint">Register an app in Entra ID with DeviceManagementConfiguration.Read.All (delegated). Set redirect URI to this page's URL.</div>
+      </div>
+      <div class="field">
+        <label>Tenant ID (optional -- leave blank for common)</label>
+        <input type="text" id="tenantId" placeholder="e.g. contoso.onmicrosoft.com or GUID">
+      </div>
+    </div>
+    <div class="setup-option" id="opt-local" onclick="pickSource('local')">
+      <h3>Local files</h3>
+      <p>Drag and drop scan JSONs for offline or air-gapped environments.</p>
+    </div>
+    <div id="cfg-local" class="hidden">
+      <div class="drop-zone" id="dropZone"><div style="font-size:24px;margin-bottom:4px">&#128194;</div><div style="font-size:13px;font-weight:500">Drop HardTarget scan JSONs here</div><p>Or click to browse</p></div>
+      <input type="file" id="fileInput" class="file-input" multiple accept=".json">
+    </div>
+    <div id="statusMsg" class="hidden"></div>
+    <div class="btn-row"><button class="btn btn-primary" id="connectBtn" onclick="doConnect()">Sign in &amp; connect</button></div>
+    <div style="margin-top:24px;font-size:10px;color:var(--dimmer);line-height:1.8">All processing happens locally. Graph queries go directly to Microsoft.</div>
+  </div>
+  <div id="dashboard" class="hidden">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <div class="nav" id="nav" style="flex:1"></div>
+      <button class="refresh-btn" onclick="doRefresh()">&#x21BB; Refresh</button>
+      <button class="refresh-btn" onclick="doDisconnect()">Disconnect</button>
+    </div>
+    <div class="ebar"><button class="ebtn" onclick="exportCSV()">Export CSV</button></div>
+    <div id="content"></div>
+  </div>
+  <div class="footer">HardTarget Fleet Dashboard &middot; v1.1.0</div>
+</div>
+<script>
+// State
+let fleet=[],msalApp=null,sourceType='graph',currentView='overview',selectedMachine=null,sortBy='severity';
+function E(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+// M-5 FIX: Escape for use inside JS string literals in HTML attributes (onclick).
+// Prevents breakout via single quotes, backslashes, or newlines in device names.
+function EA(s){return s?String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'\\n').replace(/\r/g,'\\r'):''}function showStatus(m,c){const el=document.getElementById('statusMsg');el.className='status-msg '+c;el.textContent=m;el.classList.remove('hidden')}
+function hideStatus(){document.getElementById('statusMsg').classList.add('hidden')}
+function pickSource(t){sourceType=t;['graph','local'].forEach(k=>{document.getElementById('opt-'+k).classList.toggle('active',k===t);document.getElementById('cfg-'+k).classList.toggle('hidden',k!==t)});document.getElementById('connectBtn').textContent=t==='graph'?'Sign in & connect':'Load files'}
+
+// Drop zone
+const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');loadLocal(e.dataTransfer.files)});
+dz.addEventListener('click',()=>fi.click());
+fi.addEventListener('change',e=>loadLocal(e.target.files));
+
+// Compliance check definitions (maps JSON keys to human-readable findings)
+// Must match all 34 rules in CompliancePolicy.json (plus Hibernate info-only)
+const CHECKS = [
+  // Encryption
+  {key:'BitLocker_On',       expect:true,  title:'BitLocker is OFF',                section:'encryption', severity:'fail'},
+  {key:'BitLocker_HasPIN',   expect:true,  title:'BitLocker has no pre-boot PIN',   section:'encryption', severity:'fail'},
+  {key:'EnhancedPIN_Enabled',expect:true,  title:'Enhanced BitLocker PIN not enabled',section:'encryption',severity:'warn'},
+  {key:'BLNetworkUnlock_Disabled',expect:true,title:'BitLocker Network Unlock is enabled',section:'encryption',severity:'fail'},
+  {key:'SecureBoot',         expect:true,  title:'Secure Boot is DISABLED',         section:'bios',       severity:'fail'},
+  // Sleep / Power
+  {key:'S0_Active',          expect:false, title:'Modern Standby (S0) is ACTIVE',   section:'sleep',      severity:'fail'},
+  {key:'ConnectedStandby',   expect:false, title:'Connected Standby is ENABLED',    section:'sleep',      severity:'fail'},
+  {key:'FastStartup',        expect:false, title:'Fast Startup is ENABLED',         section:'sleep',      severity:'fail'},
+  {key:'WakeTimers_Disabled',expect:true,  title:'Wake timers are ENABLED',         section:'sleep',      severity:'warn'},
+  {key:'Hibernate',          expect:false, title:'Hibernation is ENABLED',          section:'sleep',      severity:'warn'},
+  // Memory Residue
+  {key:'CrashDumps',         expect:false, title:'Crash dumps are ENABLED',         section:'memory',     severity:'fail'},
+  {key:'NMIDumps',           expect:false, title:'NMI crash dumps are ENABLED',     section:'memory',     severity:'warn'},
+  {key:'PagefileClearedAtShutdown', expect:true, title:'Pagefile NOT cleared at shutdown', section:'memory', severity:'fail'},
+  {key:'KernelInRAM',        expect:true,  title:'Kernel pages to disk',            section:'memory',     severity:'warn'},
+  // Virtualization / DMA
+  {key:'VBS_Running',        expect:true,  title:'VBS is NOT running',              section:'dma',        severity:'warn'},
+  {key:'HVCI_Running',       expect:true,  title:'HVCI is NOT running',             section:'dma',        severity:'warn'},
+  {key:'CredentialGuard_Running',expect:true,title:'Credential Guard is NOT running',section:'dma',       severity:'warn'},
+  {key:'DMAGuard',           expect:true,  title:'DMA Guard not enforced',          section:'dma',        severity:'fail', condition:'HasDMAPorts'},
+  // Access Control
+  {key:'RDP_Disabled',       expect:true,  title:'Remote Desktop is ENABLED',       section:'access',     severity:'fail'},
+  {key:'AutoLogon_Disabled', expect:true,  title:'Auto-logon is ENABLED',           section:'access',     severity:'fail'},
+  {key:'ARSO_Disabled',      expect:true,  title:'ARSO is ENABLED',                 section:'access',     severity:'warn'},
+  {key:'UAC_RequiresPassword',expect:true, title:'UAC does not require password',   section:'access',     severity:'warn'},
+  {key:'ScreenTimeout_Compliant',expect:true,title:'Screen timeout too long or disabled',section:'access', severity:'warn'},
+  {key:'BuiltinAdmin_Disabled',expect:true,title:'Built-in Administrator is ENABLED',section:'access',    severity:'fail'},
+  {key:'AccountLockout_Set', expect:true,  title:'Account lockout not configured',  section:'access',     severity:'fail'},
+  {key:'PasswordMinLength',  expect:true,  title:'Password minimum length too short',section:'access',    severity:'warn', evalFn:function(v){return typeof v==='number'?v>=8:v===true}},
+  {key:'CtrlAltDel_Required',expect:true,  title:'Ctrl+Alt+Del not required at login',section:'access',   severity:'warn'},
+  {key:'LastUsername_Hidden', expect:true,  title:'Last username shown at login',    section:'access',     severity:'warn'},
+  {key:'LSAProtection_Enabled',expect:true,title:'LSA Protection (RunAsPPL) is OFF',section:'access',     severity:'fail'},
+  // Boot Integrity
+  {key:'KernelDebug_Disabled',expect:true, title:'Kernel debugging is ENABLED',     section:'boot',       severity:'fail'},
+  {key:'TestSigning_Disabled',expect:true, title:'Test signing is ENABLED',         section:'boot',       severity:'fail'},
+  // Data Exposure
+  {key:'AutoRun_Disabled',   expect:true,  title:'AutoRun/AutoPlay is ENABLED',     section:'forensic',   severity:'fail'},
+  {key:'WinRM_Disabled',     expect:true,  title:'WinRM is ENABLED',                section:'forensic',   severity:'fail'},
+  {key:'ActivityHistory_Disabled',expect:true,title:'Activity History is tracking',  section:'forensic',   severity:'warn'},
+  {key:'Prefetch_Disabled',  expect:true,  title:'Prefetch is ENABLED',             section:'forensic',   severity:'warn'},
+];
+
+function evaluateDevice(data) {
+  const findings = [];
+  CHECKS.forEach(c => {
+    if (c.condition && !data[c.condition]) return; // conditional check (e.g. DMA only if ports present)
+    const val = data[c.key];
+    let pass;
+    if (c.evalFn) {
+      pass = c.evalFn(val);
+    } else {
+      pass = val === c.expect;
+    }
+    if (!pass) {
+      findings.push({id: c.key, title: c.title, section: c.section, status: c.severity});
+    }
+  });
+  const fails = findings.filter(f => f.status === 'fail').length;
+  const warns = findings.filter(f => f.status === 'warn').length;
+  const total = CHECKS.length;
+  const pass = total - fails - warns;
+  const posture = fails > 3 ? 'fail' : fails > 0 ? 'warn' : warns > 2 ? 'warn' : 'pass';
+  return {
+    computer: data._deviceName || 'Unknown',
+    os: data.OS || '', edition: data.Edition || '',
+    hasDMA: data.HasDMAPorts || false,
+    scanTime: data.ScanTime || '',
+    findings, fails, warns, pass, total, posture
+  };
+}
+
+// Graph API connection
+async function doConnect(){
+  hideStatus();
+  if(sourceType==='local'){showStatus('Use drag & drop above','error');return}
+  const clientId=document.getElementById('clientId').value.trim();
+  if(!clientId){showStatus('Enter an Entra App (Client) ID','error');return}
+  const tenantId=document.getElementById('tenantId').value.trim()||'common';
+  showStatus('Signing in...','loading');
+  try{
+    // M-6 FIX: Use memoryStorage instead of sessionStorage. Tokens are only
+    // held in JS memory, preventing theft by browser extensions or same-origin scripts.
+    // Tradeoff: tokens don't persist across page refresh (user must re-authenticate).
+    msalApp=new msal.PublicClientApplication({auth:{clientId,authority:'https://login.microsoftonline.com/'+tenantId,redirectUri:window.location.origin+window.location.pathname},cache:{cacheLocation:'memoryStorage'}});
+    await msalApp.initialize();
+    const loginResp=await msalApp.loginPopup({scopes:['DeviceManagementConfiguration.Read.All']});
+    showStatus('Fetching compliance data...','loading');
+    await fetchGraphData(loginResp.account);
+  }catch(e){showStatus('Sign-in failed: '+e.message,'error')}
+}
+
+async function getToken(){
+  const accounts=msalApp.getAllAccounts();
+  if(!accounts.length) throw new Error('Not signed in');
+  try{return await msalApp.acquireTokenSilent({scopes:['DeviceManagementConfiguration.Read.All'],account:accounts[0]})}
+  catch(e){return await msalApp.acquireTokenPopup({scopes:['DeviceManagementConfiguration.Read.All']})}
+}
+
+async function graphGet(url,token){
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+token.accessToken}});
+  if(!r.ok) throw new Error('Graph API '+r.status);
+  return r.json();
+}
+
+async function fetchGraphData(account){
+  try{
+    const token=await getToken();
+    // Find HardTarget compliance script
+    const scripts=await graphGet('https://graph.microsoft.com/beta/deviceManagement/deviceComplianceScripts',token);
+    const ht=scripts.value.find(s=>s.displayName&&s.displayName.toLowerCase().includes('hardtarget'));
+    if(!ht){showStatus('No HardTarget compliance script found in Intune. Upload HardTarget_Compliance.ps1 first.','error');return}
+    // Get device run states
+    let allStates=[], url='https://graph.microsoft.com/beta/deviceManagement/deviceComplianceScripts/'+ht.id+'/deviceRunStates?$expand=managedDevice&$top=100';
+    while(url){
+      const page=await graphGet(url,token);
+      allStates=allStates.concat(page.value||[]);
+      url=page['@odata.nextLink']||null;
+    }
+    if(!allStates.length){showStatus('No device results yet. Wait for devices to check in.','error');return}
+    // Parse compliance output from each device
+    const devices=[];
+    allStates.forEach(state=>{
+      try{
+        const output=state.detectionScriptOutput||state.preRemediationDetectionScriptOutput||'';
+        if(!output) return;
+        const data=JSON.parse(output);
+        data._deviceName=state.managedDevice?.deviceName||state.managedDevice?.azureADDeviceId||'Unknown';
+        data._lastSync=state.lastStateUpdateDateTime||'';
+        devices.push(data);
+      }catch(e){}
+    });
+    if(!devices.length){showStatus('No parseable compliance data. Check script output format.','error');return}
+    loadFleet(devices.map(evaluateDevice),'Intune ('+account.username+')');
+  }catch(e){showStatus('Graph query failed: '+e.message,'error')}
+}
+
+function loadLocal(files){
+  showStatus('Loading...','loading');
+  const ps=[];
+  for(const f of files){if(!f.name.endsWith('.json'))continue;ps.push(new Promise(r=>{const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);r(d)}catch(e){r(null)}};rd.onerror=()=>r(null);rd.readAsText(f)}))}
+  Promise.all(ps).then(res=>{
+    const v=res.filter(r=>r);if(!v.length){showStatus('No valid JSONs.','error');return}
+    // If these are full HardTarget scans (have summary.overallClass), convert
+    const devices=v.map(d=>{
+      if(d.summary&&d.checks) return convertFullScan(d);
+      if(d.ScanTime) return evaluateDevice(d);
+      return null;
+    }).filter(Boolean);
+    if(!devices.length){showStatus('No valid HardTarget data.','error');return}
+    loadFleet(devices,'Local files');
+  });
+}
+
+function convertFullScan(scan){
+  const findings=(scan.checks||[]).filter(c=>c.status==='fail'||c.status==='warn').map(c=>({id:c.id,title:c.title,section:c.section,status:c.status}));
+  return{computer:scan.computer,os:scan.machine?.os||'',edition:scan.machine?.edition||'',hasDMA:scan.hasDmaPorts||false,scanTime:scan.generated||'',findings,fails:scan.summary?.fail||0,warns:scan.summary?.warn||0,pass:scan.summary?.pass||0,total:(scan.summary?.pass||0)+(scan.summary?.warn||0)+(scan.summary?.fail||0),posture:scan.summary?.overallClass==='exposed'?'fail':scan.summary?.overallClass==='warn'?'warn':'pass'};
+}
+
+function loadFleet(devices,label){
+  // Deduplicate by computer name
+  const byPC={};devices.forEach(d=>{const n=d.computer;if(!byPC[n]||d.scanTime>byPC[n].scanTime)byPC[n]=d});
+  fleet=Object.values(byPC).sort((a,b)=>a.computer.localeCompare(b.computer));
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  // M-5 FIX: Use textContent instead of innerHTML to prevent XSS via label/username
+  const hm=document.getElementById('headerMeta');
+  hm.textContent='';
+  const dot=document.createElement('span');dot.style.cssText='display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pass);margin-right:6px;vertical-align:middle';
+  hm.appendChild(dot);
+  hm.appendChild(document.createTextNode(fleet.length+' machines \xb7 '+label));
+  currentView='overview';selectedMachine=null;renderNav();render();
+}
+
+async function doRefresh(){if(msalApp){showStatus('Refreshing...','loading');await fetchGraphData(msalApp.getAllAccounts()[0])}}
+function doDisconnect(){fleet=[];msalApp=null;currentView='overview';selectedMachine=null;document.getElementById('dashboard').classList.add('hidden');document.getElementById('setupScreen').classList.remove('hidden');document.getElementById('headerMeta').textContent='';hideStatus()}
+
+// Aggregation
+function getStats(){
+  const t=fleet.length,f=fleet.filter(m=>m.posture==='fail').length,w=fleet.filter(m=>m.posture==='warn').length,p=fleet.filter(m=>m.posture==='pass').length;
+  const fc={};fleet.forEach(m=>{m.findings.filter(f=>f.status==='fail').forEach(f=>{if(!fc[f.id])fc[f.id]={id:f.id,title:f.title,section:f.section,count:0,machines:[]};fc[f.id].count++;fc[f.id].machines.push(m.computer)})});
+  const wc={};fleet.forEach(m=>{m.findings.filter(f=>f.status==='warn').forEach(f=>{if(!wc[f.id])wc[f.id]={id:f.id,title:f.title,section:f.section,count:0,machines:[]};wc[f.id].count++;wc[f.id].machines.push(m.computer)})});
+  return{total:t,fail:f,warn:w,pass:p,topFails:Object.values(fc).sort((a,b)=>b.count-a.count),topWarns:Object.values(wc).sort((a,b)=>b.count-a.count)};
+}
+function getSorted(){const o={fail:0,warn:1,pass:2};return[...fleet].sort((a,b)=>{if(sortBy==='severity')return(o[a.posture]||3)-(o[b.posture]||3);if(sortBy==='name')return a.computer.localeCompare(b.computer);if(sortBy==='fails')return b.fails-a.fails;return 0})}
+
+// Rendering
+function renderNav(){document.getElementById('nav').innerHTML=[['overview','Overview'],['machines','Machines'],['findings','Top Findings']].map(([k,l])=>'<button class="'+(currentView===k?'active':'')+'" onclick="setView(\''+k+'\')">'+l+'</button>').join('')}
+function setView(v){currentView=v;selectedMachine=null;renderNav();render()}
+function selectMachine(n){selectedMachine=n;currentView='machines';renderNav();render()}
+function setSort(s){sortBy=s;render()}
+
+function render(){
+  const el=document.getElementById('content'),s=getStats();
+  if(currentView==='overview')el.innerHTML=rOv(s);
+  else if(currentView==='machines')el.innerHTML=selectedMachine?rDet(fleet.find(m=>m.computer===selectedMachine)):rList(s);
+  else if(currentView==='findings')el.innerHTML=rFi(s);
+}
+
+function rOv(s){
+  let h='<div class="scards"><div class="scard"><div class="v">'+s.total+'</div><div class="l">Machines</div></div><div class="scard"><div class="v" style="color:'+(s.fail?'var(--fail)':'var(--dim)')+'">'+s.fail+'</div><div class="l">Non-compliant</div></div><div class="scard"><div class="v" style="color:'+(s.warn?'var(--warn)':'var(--dim)')+'">'+s.warn+'</div><div class="l">Warn</div></div><div class="scard"><div class="v" style="color:'+(s.pass?'var(--pass)':'var(--dim)')+'">'+s.pass+'</div><div class="l">Compliant</div></div></div>';
+  h+='<div class="pbar">'+(s.fail?'<div style="flex:'+s.fail+';background:var(--fail)"></div>':'')+(s.warn?'<div style="flex:'+s.warn+';background:var(--warn)"></div>':'')+(s.pass?'<div style="flex:'+s.pass+';background:var(--pass)"></div>':'')+'</div>';
+  h+='<div class="pleg"><span>'+Math.round(s.fail/s.total*100)+'% non-compliant</span><span>'+Math.round(s.pass/s.total*100)+'% compliant</span></div>';
+  if(s.topFails.length){
+    h+='<div class="sh">Most Common Failures</div>';
+    s.topFails.slice(0,8).forEach(f=>{h+='<div class="frow" style="padding:10px 14px;margin-bottom:6px"><div style="width:28px;height:28px;border-radius:6px;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--fail);flex-shrink:0">'+f.count+'</div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+E(f.title)+'</div><div style="font-size:10px;color:var(--dim)">'+f.machines.map(E).join(', ')+'</div></div><div style="font-size:10px;color:var(--dim)">'+E(f.section)+'</div></div>'});
+  }
+  if(s.topWarns.length){
+    h+='<div class="sh" style="margin-top:20px">Most Common Warnings</div>';
+    s.topWarns.slice(0,6).forEach(f=>{h+='<div class="frow" style="padding:10px 14px;margin-bottom:6px"><div style="width:28px;height:28px;border-radius:6px;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--warn);flex-shrink:0">'+f.count+'</div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+E(f.title)+'</div><div style="font-size:10px;color:var(--dim)">'+f.machines.map(E).join(', ')+'</div></div><div style="font-size:10px;color:var(--dim)">'+E(f.section)+'</div></div>'});
+  }
+  return h;
+}
+
+function rList(){
+  const sorted=getSorted();
+  let h='<div class="sorts"><span class="l">Sort:</span>'+['severity','fails','name'].map(k=>'<button class="sbtn '+(sortBy===k?'active':'')+'" onclick="setSort(\''+k+'\')">'+(k==='fails'?'Fail count':k[0].toUpperCase()+k.slice(1))+'</button>').join('')+'</div>';
+  sorted.forEach(m=>{
+    h+='<div class="mitem '+m.posture+'" onclick="selectMachine(\''+EA(m.computer)+'\')"><div class="mhead"><div class="nm">'+E(m.computer)+(m.edition?'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;margin-left:6px;background:rgba(56,189,248,0.15);color:var(--accent)">'+E(m.edition)+'</span>':'')+'</div><span class="b b-'+m.posture+'">'+(m.posture==='fail'?'NON-COMPLIANT':m.posture==='warn'?'WARN':'COMPLIANT')+'</span></div><div class="mmeta"><span>'+E(m.os)+'</span><span>&middot;</span><span><span style="color:var(--pass)">'+m.pass+'P</span> <span style="color:var(--warn)">'+m.warns+'W</span> <span style="color:var(--fail)">'+m.fails+'F</span></span>'+(m.hasDMA?'<span style="color:var(--warn);font-size:10px">&#x26A1; DMA</span>':'')+'</div></div>';
+  });
+  return h;
+}
+
+function rDet(m){
+  if(!m)return'<p>Not found.</p>';
+  let h='<button class="backbtn" onclick="selectedMachine=null;render()">&#x2190; Back to fleet</button>';
+  h+='<div class="dcard"><div class="mhead" style="margin-bottom:12px"><div class="nm" style="font-size:18px">'+E(m.computer)+'</div><span class="b b-'+m.posture+'">'+(m.posture==='fail'?'NON-COMPLIANT':m.posture==='warn'?'WARN':'COMPLIANT')+'</span></div>';
+  h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px">'+E(m.os)+(m.hasDMA?' <span style="color:var(--warn)">&#x26A1; DMA ports present</span>':'')+'</div>';
+  h+='<div style="font-size:11px;color:var(--dimmer);margin-bottom:12px">Scanned: '+E(m.scanTime)+'</div>';
+  h+='<div class="scards" style="margin-bottom:0"><div class="scard"><div class="v" style="font-size:22px;color:var(--pass)">'+m.pass+'</div><div class="l">Pass</div></div><div class="scard"><div class="v" style="font-size:22px;color:var(--warn)">'+m.warns+'</div><div class="l">Warn</div></div><div class="scard"><div class="v" style="font-size:22px;color:var(--fail)">'+m.fails+'</div><div class="l">Fail</div></div></div></div>';
+  const fails=m.findings.filter(f=>f.status==='fail'),warns=m.findings.filter(f=>f.status==='warn');
+  if(fails.length){h+='<div class="sh">Failures</div>';fails.forEach(f=>{h+='<div class="crow"><div class="cdot" style="background:var(--fail)"></div><span style="flex:1;font-size:12px">'+E(f.title)+'</span><span style="font-size:10px;color:var(--dim)">'+E(f.section)+'</span></div>'})}
+  if(warns.length){h+='<div class="sh" style="margin-top:16px">Warnings</div>';warns.forEach(f=>{h+='<div class="crow"><div class="cdot" style="background:var(--warn)"></div><span style="flex:1;font-size:12px">'+E(f.title)+'</span><span style="font-size:10px;color:var(--dim)">'+E(f.section)+'</span></div>'})}
+  return h;
+}
+
+function rFi(s){
+  const all=[...s.topFails,...s.topWarns.filter(w=>!s.topFails.find(f=>f.id===w.id))].sort((a,b)=>b.count-a.count);
+  let h='';
+  all.forEach(f=>{
+    const iF=s.topFails.find(x=>x.id===f.id),col=iF?'var(--fail)':'var(--warn)',bg=iF?'rgba(239,68,68,0.1)':'rgba(245,158,11,0.1)';
+    const bar=fleet.map(m=>'<div style="background:'+(f.machines.includes(m.computer)?col:'rgba(34,197,94,0.3)')+'"></div>').join('');
+    const tags=f.machines.map(n=>'<span class="tag tag-'+(iF?'fail':'warn')+'" onclick="selectMachine(\''+EA(n)+'\')">'+E(n)+'</span>').join('');
+    h+='<div class="frow"><div class="fcnt" style="background:'+bg+';color:'+col+'">'+f.count+'/'+s.total+'</div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+E(f.title)+'</div><div style="font-size:10px;color:var(--dim)">'+E(f.section)+' &middot; '+Math.round(f.count/s.total*100)+'% of fleet</div><div class="fbar">'+bar+'</div><div class="tags">'+tags+'</div></div></div>';
+  });
+  return h;
+}
+
+function exportCSV(){const esc=s=>{s=String(s);if(s[0]==='='||s[0]==='+'||s[0]==='-'||s[0]==='@'||s[0]==='\t'||s[0]==='\r')s="'"+s;return'"'+s.replace(/"/g,'""').replace(/[\r\n]+/g,' ')+'"'};const h=['Computer','OS','Edition','Posture','Pass','Warn','Fail','HasDMA','ScanTime'];const r=fleet.map(m=>[m.computer,m.os,m.edition,m.posture,m.pass,m.warns,m.fails,m.hasDMA?'Yes':'No',m.scanTime]);const csv=[h,...r].map(x=>x.map(c=>esc(c)).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='hardtarget_fleet.csv';a.click()}
+</script>
+</body>
+</html>

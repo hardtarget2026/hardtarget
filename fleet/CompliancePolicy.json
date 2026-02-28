@@ -1,0 +1,276 @@
+{
+  "Rules": [
+    {
+      "SettingName": "CheckErrors",
+      "Operator": "IsEquals",
+      "DataType": "Int64",
+      "Operand": 0,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "HardTarget scan completed with errors", "Description": "One or more compliance checks failed to execute. Investigate CheckErrorDetails for root cause." }]
+    },
+    {
+      "SettingName": "BitLocker_On",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "BitLocker must be enabled", "Description": "Full-disk encryption is required. Enable BitLocker on the system drive." }]
+    },
+    {
+      "SettingName": "BitLocker_HasPIN",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "BitLocker must use TPM+PIN", "Description": "TPM-only BitLocker auto-unlocks at boot. A pre-boot PIN is required for physical access protection." }]
+    },
+    {
+      "SettingName": "SecureBoot",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Secure Boot must be enabled", "Description": "Secure Boot prevents unauthorized bootloaders and rootkits. Enable in BIOS/UEFI settings." }]
+    },
+    {
+      "SettingName": "FastStartup",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": false,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Fast Startup must be disabled", "Description": "Fast Startup writes kernel memory to disk at shutdown, creating a forensic artifact." }]
+    },
+    {
+      "SettingName": "CrashDumps",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": false,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Crash dumps must be disabled", "Description": "Crash dumps write memory contents to disk, exposing credentials and encryption keys." }]
+    },
+    {
+      "SettingName": "NMIDumps",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": false,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "NMI crash dumps must be disabled", "Description": "NMI crash dumps allow physical button press to force a full memory dump." }]
+    },
+    {
+      "SettingName": "PagefileClearedAtShutdown",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Pagefile must be cleared at shutdown", "Description": "The pagefile may contain credentials and sensitive data. It must be zeroed at shutdown." }]
+    },
+    {
+      "SettingName": "KernelInRAM",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Kernel must be kept in RAM", "Description": "Kernel paging to disk allows offline extraction of sensitive kernel data." }]
+    },
+    {
+      "SettingName": "S0_Active",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": false,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Modern Standby (S0) must be disabled", "Description": "Modern Standby keeps the CPU active during sleep, enabling wake attacks." }]
+    },
+    {
+      "SettingName": "ConnectedStandby",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": false,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Connected Standby must be disabled", "Description": "Connected Standby allows network activity and task execution during sleep." }]
+    },
+    {
+      "SettingName": "WakeTimers_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Wake timers must be disabled", "Description": "Wake timers bring the device out of sleep to run unattended tasks." }]
+    },
+    {
+      "SettingName": "VBS_Running",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Virtualization Based Security must be running", "Description": "VBS provides hardware-backed isolation for credentials and kernel integrity." }]
+    },
+    {
+      "SettingName": "HVCI_Running",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "HVCI (Memory Integrity) must be running", "Description": "HVCI prevents unsigned drivers from loading kernel code." }]
+    },
+    {
+      "SettingName": "CredentialGuard_Running",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Credential Guard should be running", "Description": "Credential Guard isolates LSASS credentials. Requires Enterprise/Education edition." }]
+    },
+    {
+      "SettingName": "RDP_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Remote Desktop must be disabled", "Description": "RDP exposes a network-accessible login surface." }]
+    },
+    {
+      "SettingName": "AutoLogon_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Auto-logon must be disabled", "Description": "Auto-logon stores credentials in the registry and bypasses the login screen." }]
+    },
+    {
+      "SettingName": "ARSO_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "ARSO must be disabled", "Description": "ARSO automatically signs in after reboot, leaving the session unlocked." }]
+    },
+    {
+      "SettingName": "UAC_RequiresPassword",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "UAC must require password for elevation", "Description": "Consent-only UAC allows silent elevation from an unlocked session." }]
+    },
+    {
+      "SettingName": "ScreenTimeout_Compliant",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Display timeout must be 5 minutes or less", "Description": "Long or disabled screen timeouts leave the session exposed." }]
+    },
+    {
+      "SettingName": "BuiltinAdmin_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Built-in Administrator account must be disabled", "Description": "The built-in Administrator (SID -500) bypasses UAC entirely." }]
+    },
+    {
+      "SettingName": "AccountLockout_Set",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Account lockout policy must be configured", "Description": "Without lockout, unlimited brute force attempts at the login screen." }]
+    },
+    {
+      "SettingName": "PasswordMinLength",
+      "Operator": "GreaterEquals",
+      "DataType": "Int64",
+      "Operand": 8,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Minimum password length must be 8+", "Description": "NIST 800-63B recommends minimum 8 characters. CIS recommends 14 for high-security environments." }]
+    },
+    {
+      "SettingName": "CtrlAltDel_Required",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Ctrl+Alt+Del should be required at login", "Description": "CIS 2.3.7.1: Prevents fake login screen overlays." }]
+    },
+    {
+      "SettingName": "LastUsername_Hidden",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Last username should be hidden at login", "Description": "CIS 2.3.7.4: Showing the last username gives an attacker half the credential." }]
+    },
+    {
+      "SettingName": "LSAProtection_Enabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "LSA Protection (RunAsPPL) must be enabled", "Description": "Without RunAsPPL, Mimikatz can dump all credentials from LSASS memory." }]
+    },
+    {
+      "SettingName": "AutoRun_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "AutoRun/AutoPlay must be disabled", "Description": "CIS 18.9.8.x: Prevents USB/CD auto-execution of code." }]
+    },
+    {
+      "SettingName": "EnhancedPIN_Enabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Enhanced BitLocker PIN should be enabled", "Description": "Allows alphanumeric PINs, massively increasing keyspace." }]
+    },
+    {
+      "SettingName": "WinRM_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "WinRM must be disabled", "Description": "CIS 18.9.102.x: WinRM enables remote PowerShell. Disable unless required." }]
+    },
+    {
+      "SettingName": "KernelDebug_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Kernel debugging must be disabled", "Description": "Kernel debugging gives complete access to all memory and security mechanisms." }]
+    },
+    {
+      "SettingName": "TestSigning_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Test signing must be disabled", "Description": "Test signing allows unsigned kernel drivers, bypassing code integrity." }]
+    },
+    {
+      "SettingName": "BLNetworkUnlock_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "BitLocker Network Unlock must be disabled", "Description": "Network Unlock auto-decrypts on the corporate network without PIN." }]
+    },
+    {
+      "SettingName": "ActivityHistory_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Activity History must be disabled", "Description": "Activity History records application usage, creating a forensic timeline." }]
+    },
+    {
+      "SettingName": "Prefetch_Disabled",
+      "Operator": "IsEquals",
+      "DataType": "Boolean",
+      "Operand": true,
+      "MoreInfoUrl": "https://github.com/hardtarget2026/hardtarget",
+      "RemediationStrings": [{ "Language": "en_US", "Title": "Prefetch must be disabled", "Description": "Prefetch records application execution history on disk." }]
+    }
+  ]
+}
